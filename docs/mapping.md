@@ -84,32 +84,63 @@ Because the communication with MID360 is via network, we can directly get data f
    > Please make sure that both `livox_ros_driver2` and `FAST-LIO 2` are built in **separate** workspaces to avoid conflicts.
    > Before building `FAST-LIO 2`, make sure to source the `livox_ws/install/setup.bash` file in your terminal.
 
+#### Docker option
+
+If you prefer to use Docker on the PC, a dedicated mapping image is provided from the `legged_ros2` repository root:
+
+```bash
+docker/build_mapping.sh
+docker/run_mapping.sh
+```
+
+`docker/run_mapping.sh` starts a mapping-specific container, mounts the local `legged_ros2` repository into `/root/legged_ws/src/legged_ros2`, initializes the `legged_ws` workspace, and then opens an interactive shell in the container.
+
+The mapping image already includes:
+
+- `Livox-SDK2`
+- `livox_ros_driver2` in `/root/livox_ws`
+- `FAST-LIO 2` in `/root/fast_lio_ws`
+
+The mapping Docker workflow uses fixed config paths:
+
+- Livox config: `docker/config/MID360_config.json` on the host, mounted to `/root/livox_ws/src/livox_ros_driver2/config/MID360_config.json` in the container
+- FAST-LIO config: built-in `mid360.yaml` inside the image
+
+After mounting `docker/config/MID360_config.json`, `docker/run_mapping.sh` will automatically re-run `./build.sh humble` inside `/root/livox_ws/src/livox_ros_driver2` to make sure the Livox driver uses the mounted config.
+
+Open additional terminals in the same running container with:
+
+```bash
+docker/exec_mapping.sh
+```
+
 #### Launch Mapping
 
 You need 4 terminals to launch the mapping process:
 
 1. **Terminal 1**: Source and launch the `livox_ros_driver2` node to get data from MID360:
     ```bash
-    source path/to/unitree_ros2/setup.sh # Source ROS2 and change DDS implementation for Unitree Go2
-    source ~/livox_ws/install/setup.bash
+    source /root/legged_ws/setup.sh
+    export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+    source /root/livox_ws/install/setup.bash
     ros2 launch livox_ros_driver2 msg_MID360_launch.py
     ```
 2. **Terminal 2**: Source and launch the `FAST-LIO 2` node to perform SLAM:
     ```bash
-    source path/to/unitree_ros2/setup.sh # Source ROS2 and change DDS implementation for Unitree Go2
-    source ~/fast_lio_ws/install/setup.bash
+    source /root/legged_ws/setup.sh
+    export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+    source /root/livox_ws/install/setup.bash
+    source /root/fast_lio_ws/install/setup.bash
     ros2 launch fast_lio mapping.launch.py config_file:=mid360.yaml
     ```
 3. **Terminal 3**: Source and run the `dual_imu_static_tf.cpp` to publish static TF `odom -> camera_init and lidar(body) -> base`
     ```bash
-    source path/to/unitree_ros2/setup.sh # Source ROS2 and change DDS implementation for Unitree Go2
-    source ~/legged_ws/install/setup.bash # workspace where legged_ros2 is built
+    source /root/legged_ws/setup.sh
     ros2 run legged_mapping dual_imu_static_tf_node
     ```
 4. **Terminal 4**: (Optional) Broadcast the robot's TF tree and visualize robot in RViz2:
     ```bash
-    source path/to/unitree_ros2/setup.sh # Source ROS2 and change DDS implementation for Unitree Go2
-    source ~/legged_ws/install/setup.bash # workspace where legged_ros2 is built
+    source /root/legged_ws/setup.sh
     ros2 launch go2_description bringup_broadcasters.launch.py 
     ```
 
@@ -122,6 +153,3 @@ Will be added soon.
 ### Unitree Go2 with XT16
 
 Will be added soon.
-
-
-
