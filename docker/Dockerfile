@@ -58,8 +58,8 @@ RUN set -exo pipefail \
 RUN set -exo pipefail \
     && mkdir -p /root/legged_ws/src
 
-COPY docker/setup.sh /root/legged_ws/setup.sh
-COPY docker/setup_local.sh /root/legged_ws/setup_local.sh
+COPY docker/env/setup.sh /root/legged_ws/setup.sh
+COPY docker/env/setup_local.sh /root/legged_ws/setup_local.sh
 RUN chmod +x /root/legged_ws/setup.sh /root/legged_ws/setup_local.sh
 
 WORKDIR /root/legged_ws
