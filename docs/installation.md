@@ -57,27 +57,39 @@ If you prefer to use Docker for installation and running Legged ROS2, follow the
 
 ### Build a production image
 
-Build the production image with the Dockerfile in the repository:
+From the `legged_ros2` repository root, build the production image with the helper script:
 
 ```bash
-docker build --network host \
-  --build-arg HTTP_PROXY=$HTTP_PROXY \
-  --build-arg HTTPS_PROXY=$HTTPS_PROXY \
-  --build-arg ALL_PROXY=$ALL_PROXY \
-  --build-arg http_proxy=$http_proxy \
-  --build-arg https_proxy=$https_proxy \
-  --build-arg all_proxy=$all_proxy \
-  -f src/legged_ros2/docker/Dockerfile \
-  -t legged-ros2:humble .
+docker/build.sh
 ```
 
-### Start a container
+### Start and initialize the container
+
+Run the container setup script from the `legged_ros2` repository root:
 
 ```bash
-docker run --rm -it --network host legged-ros2:humble
+docker/run.sh
 ```
 
-Inside the container, choose one setup script based on your use case:
+`docker/run.sh` starts the production container, mounts the local `legged_ros2` repository to `/root/legged_ws/src/legged_ros2`, and performs the one-time workspace initialization inside the container:
+
+- download ONNX Runtime into `third_party` if it is missing
+- install package dependencies with `rosdep`
+- build the workspace with `colcon build --symlink-install` if `install/setup.bash` is not present
+
+If a container with the same name already exists, `run.sh` removes it first and creates a fresh one. After initialization finishes, `run.sh` opens an interactive shell inside the container in the current terminal.
+
+### Enter the running container
+
+Use `docker/exec.sh` when you want to open another terminal in the already running container:
+
+```bash
+docker/exec.sh
+```
+
+`docker/exec.sh` does not create or initialize the container. It only runs `/bin/bash` inside the existing `legged-ros2-humble` container.
+
+Then choose one setup script based on your use case:
 
 ```bash
 source /root/legged_ws/setup.sh
@@ -85,23 +97,6 @@ source /root/legged_ws/setup.sh
 source /root/legged_ws/setup_local.sh
 ```
 
-<!-- ### Verify installation with the dedicated verification Dockerfile
-
-If you only want to verify the installation pipeline, use `Dockerfile.installation.verify`:
-
-```bash
-docker build --network host \
-  --build-arg HTTP_PROXY=$HTTP_PROXY \
-  --build-arg HTTPS_PROXY=$HTTPS_PROXY \
-  --build-arg ALL_PROXY=$ALL_PROXY \
-  --build-arg http_proxy=$http_proxy \
-  --build-arg https_proxy=$https_proxy \
-  --build-arg all_proxy=$all_proxy \
-  -f src/legged_ros2/docker/Dockerfile.installation.verify \
-  -t legged-install-verify:humble .
-``` -->
-
 ## What's Next?
 
 After installation, continue with the [Usage Guide](usage.md).
-
