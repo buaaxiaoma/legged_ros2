@@ -103,10 +103,10 @@ The mapping image already includes:
 
 The mapping Docker workflow uses fixed config paths:
 
-- Livox config: `docker/config/MID360_config.json` on the host, mounted to `/root/livox_ws/src/livox_ros_driver2/config/MID360_config.json` in the container
+- Livox config: `legged_mapping/config/MID360_config.json` on the host, mounted to `/root/livox_ws/src/livox_ros_driver2/config/MID360_config.json` in the container
 - FAST-LIO config: built-in `mid360.yaml` inside the image
 
-After mounting `docker/config/MID360_config.json`, `docker/run_mapping.sh` will automatically re-run `./build.sh humble` inside `/root/livox_ws/src/livox_ros_driver2` to make sure the Livox driver uses the mounted config.
+After mounting `legged_mapping/config/MID360_config.json`, `docker/run_mapping.sh` will automatically re-run `./build.sh humble` inside `/root/livox_ws/src/livox_ros_driver2` to make sure the Livox driver uses the mounted config.
 
 Open additional terminals in the same running container with:
 

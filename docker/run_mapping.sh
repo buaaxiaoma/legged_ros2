@@ -25,7 +25,7 @@ docker_args=(
   --name "${CONTAINER_NAME}"
   --network host
   -v "${REPO_ROOT}:/root/legged_ws/src/legged_ros2"
-  -v "${REPO_ROOT}/docker/config/MID360_config.json:/root/livox_ws/src/livox_ros_driver2/config/MID360_config.json:ro"
+  -v "${REPO_ROOT}/legged_mapping/config/MID360_config.json:/root/livox_ws/src/livox_ros_driver2/config/MID360_config.json:ro"
 )
 
 echo "Starting container ${CONTAINER_NAME} from image ${IMAGE_NAME}"
