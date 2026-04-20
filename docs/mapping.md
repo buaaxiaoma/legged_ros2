@@ -4,6 +4,8 @@ Package `legged_mapping` provides tools to work with maps in legged robot applic
 
 Here we provide a guide to set up mapping using the FAST-LIO 2 SLAM algorithm with legged robots equipped with LiDAR sensors.
 
+The package currently provides a configurable static TF helper node. It is intended to complement an external LIO stack, not replace it.
+
 Most of the following operations are carried out **on PC instead of the robot's onboard computer**, in order to have better performance and avoid conflicts with other processes running on the robot.
 
 Currently, only [Unitree Go2 with MID360](https://support.unitree.com/home/en/developer/SLAM%20and%20Navigation_service) is supported, but support for additional robots and sensors will be added in the future.
@@ -133,16 +135,77 @@ You need 4 terminals to launch the mapping process:
     source /root/fast_lio_ws/install/setup.bash
     ros2 launch fast_lio mapping.launch.py config_file:=mid360.yaml
     ```
-3. **Terminal 3**: Source and run the `dual_imu_static_tf.cpp` to publish static TF `odom -> camera_init and lidar(body) -> base`
+3. **Terminal 3**: Source and launch the configurable static TF node to bridge the external FAST-LIO frames to the robot base:
     ```bash
     source /root/legged_ws/setup.sh
-    ros2 run legged_mapping dual_imu_static_tf_node
+    ros2 launch legged_mapping lidar_static_tf.launch.py
     ```
 4. **Terminal 4**: (Optional) Broadcast the robot's TF tree and visualize robot in RViz2:
     ```bash
     source /root/legged_ws/setup.sh
     ros2 launch go2_description bringup_broadcasters.launch.py 
     ```
+
+#### Static TF configuration
+
+`lidar_static_tf_node` publishes two static TF edges that surround the dynamic transform produced by your LIO stack:
+
+- Semantic target: `odom -> tracking_origin -> tracking_body -> base`
+- FAST-LIO default compatibility: `odom -> camera_init -> body -> base`
+
+The default parameters live in `legged_mapping/config/lidar_static_tf.yaml` and expose:
+
+- `rotation_order`
+- `angle_unit`
+- `odom_to_tracking_origin.parent_frame`
+- `odom_to_tracking_origin.child_frame`
+- `odom_to_tracking_origin.translation_xyz`
+- `odom_to_tracking_origin.rotation_angles`
+- `tracking_body_to_base.parent_frame`
+- `tracking_body_to_base.child_frame`
+- `tracking_body_to_base.translation_xyz`
+- `tracking_body_to_base.rotation_angles`
+
+`translation_xyz` is in meters.
+
+`rotation_angles` is interpreted using the shared node-level `rotation_order` and `angle_unit` parameters. The three values are no longer implicitly fixed to `roll, pitch, yaw`; they are interpreted according to the selected intrinsic or extrinsic Euler order.
+
+The default file is set up for vanilla FAST-LIO frame names:
+
+- `odom -> camera_init`
+- `body -> base`
+
+The current default example uses:
+
+- `rotation_order: extrinsic_xyz`
+- `angle_unit: deg`
+
+If your external LIO stack uses different frame names, only update the YAML file. The node code does not need to change.
+
+You can also launch the node with a custom parameter file:
+
+```bash
+ros2 launch legged_mapping lidar_static_tf.launch.py \
+  params_file:=/absolute/path/to/your_tf.yaml
+```
+
+#### Offline transform inversion helper
+
+For manual calibration work, `legged_mapping/scripts/invert_homogeneous_transform.py` provides a standalone CLI helper that does not depend on ROS runtime.
+
+It accepts translation, Euler angles, an explicit intrinsic/extrinsic order string, and `--angle-unit {rad,deg}`. It prints the original homogeneous transform, the inverse transform, the inverse translation, and the inverse Euler angles. The script uses `numpy` internally.
+
+The script and `lidar_static_tf_node` use the same rotation-order enum set and the same angle-unit convention, so you can compute values offline and copy them directly into `lidar_static_tf.yaml`.
+
+Example:
+
+```bash
+python3 src/legged_ros2/legged_mapping/scripts/invert_homogeneous_transform.py \
+  --translation 1 2 3 \
+  --rotation 10 20 30 \
+  --order extrinsic_zyx \
+  --angle-unit deg
+```
 
 
 

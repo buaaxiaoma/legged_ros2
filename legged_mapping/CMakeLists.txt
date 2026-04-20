@@ -39,11 +39,16 @@ install(DIRECTORY
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   find_package(launch_testing_ament_cmake REQUIRED)
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
   add_launch_test(test/test_lidar_static_tf.launch.py)
   add_launch_test(test/test_lidar_static_tf_nondefault.launch.py)
+  add_test(
+    NAME test_invert_homogeneous_transform
+    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_invert_homogeneous_transform.py
+  )
 endif()
 
 ament_package()
