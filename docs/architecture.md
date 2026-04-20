@@ -80,9 +80,11 @@ Main responsibilities:
 Role: **mapping and TF helper utilities**.
 
 Main nodes (current implementation):
-- `mid360_imu_node`: IMU orientation estimation/filtering.
-- `dual_imu_static_tf_node`: initializes static TF (`odom -> camera_init`, `body(lidar) -> base`) from dual IMUs.
-- `gravity_alignment_node`: standalone gravity-alignment utility.
+- `lidar_static_tf_node`: publishes two configurable static TF edges to complete the mapping chain around an external LIO source.
+
+Default semantic chain:
+- `odom -> tracking_origin -> tracking_body -> base`
+- When used with vanilla FAST-LIO defaults, this becomes `odom -> camera_init -> body -> base`
 
 ## 4. Runtime Data and Control Flow (Go2 + RL Example)
 
