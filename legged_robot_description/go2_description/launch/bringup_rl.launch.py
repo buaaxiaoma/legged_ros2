@@ -2,7 +2,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, RegisterEventHandler
 from launch.conditions import IfCondition
 from launch.event_handlers import OnProcessExit
 from launch.substitutions import Command, FindExecutable, PathJoinSubstitution, LaunchConfiguration
@@ -52,6 +52,20 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            "lowstate_topic",
+            default_value="/lowstate",
+            description="Low-level motor state topic. Unitree MuJoCo may expose this as /rt/lowstate.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "lowcmd_topic",
+            default_value="/lowcmd",
+            description="Low-level motor command topic. Unitree MuJoCo may expose this as /rt/lowcmd.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "onnx_model_path",
             default_value=PathJoinSubstitution(
                 [
@@ -80,6 +94,22 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            "mujoco_scene_xml_path",
+            default_value=PathJoinSubstitution(
+                [FindPackageShare("go2_description"), "mjcf", "scene_terrain.xml"]
+            ),
+            description="MuJoCo scene XML used by the terrain heightmap publisher.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_heightmap_publisher",
+            default_value="false",
+            description="Publish /heightmap from the generated MuJoCo terrain scene.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "use_rviz",
             default_value="false",
             description="Start RViz2 automatically with this launch file.",
@@ -92,6 +122,13 @@ def generate_launch_description():
             description="Start rqt_controller_manager automatically with this launch file.",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "use_goal_to_cmd_vel",
+            default_value="false",
+            description="Start RViz goal-to-cmd_vel helper for position-tracking policies.",
+        )
+    )
 
     # Initialize Arguments
     description_package = LaunchConfiguration("description_package")
@@ -99,10 +136,15 @@ def generate_launch_description():
     controller_config = LaunchConfiguration("controller_config")
     main_loop_config = LaunchConfiguration("main_loop_config")
     enable_lowlevel_write = LaunchConfiguration("enable_lowlevel_write")
+    lowstate_topic = LaunchConfiguration("lowstate_topic")
+    lowcmd_topic = LaunchConfiguration("lowcmd_topic")
     onnx_model_path = LaunchConfiguration("onnx_model_path")
     io_descriptors_path = LaunchConfiguration("io_descriptors_path")
+    mujoco_scene_xml_path = LaunchConfiguration("mujoco_scene_xml_path")
     use_rviz = LaunchConfiguration("use_rviz")
     use_rqt_cm = LaunchConfiguration("use_rqt_cm")
+    use_goal_to_cmd_vel = LaunchConfiguration("use_goal_to_cmd_vel")
+    use_heightmap_publisher = LaunchConfiguration("use_heightmap_publisher")
 
     # Get URDF via xacro
     robot_description_content = Command(
@@ -118,6 +160,12 @@ def generate_launch_description():
             " ",
             "enable_lowlevel_write:=",
             enable_lowlevel_write,
+            " ",
+            "lowstate_topic:=",
+            lowstate_topic,
+            " ",
+            "lowcmd_topic:=",
+            lowcmd_topic,
         ]
     )
     robot_description = {"robot_description": robot_description_content}
@@ -188,6 +236,61 @@ def generate_launch_description():
         condition=IfCondition(use_rqt_cm),
     )
 
+    goal_to_cmd_vel_node = Node(
+        package="legged_ros2_control",
+        executable="goal_to_cmd_vel",
+        name="goal_to_cmd_vel",
+        output="both",
+        parameters=[
+            {
+                "world_frame": "odom",
+                "base_frame": "base",
+                "goal_pose_topic": "/goal_pose",
+                "clicked_point_topic": "/clicked_point",
+                "cmd_vel_topic": "/rl_cmd_vel",
+                "sport_mode_state_topic": "/sportmodestate",
+                "use_tf_pose": True,
+                "use_sport_mode_state_pose": True,
+                "prefer_sport_mode_state_pose": True,
+                "update_rate": 50.0,
+                "velocity_control_stiffness": 1.0,
+                "heading_control_stiffness": 1.5,
+                "only_positive_lin_vel_x": True,
+                "max_lin_vel_x": 2.0,
+                "max_lin_vel_y": 0.0,
+                "max_ang_vel_z": 1.5,
+                "target_dis_threshold": 0.3,
+                "target_slowdown_distance": 0.6,
+                "enable_soft_target_slowdown": True,
+                "enable_heading_speed_gate": True,
+                "heading_speed_gate_min": 0.25,
+                "disallow_reverse_target_component": True,
+                "max_linear_cmd_step": 0.02,
+                "max_angular_cmd_step": 0.04,
+                "command_smoothing_factor": 0.1,
+            }
+        ],
+        condition=IfCondition(use_goal_to_cmd_vel),
+    )
+
+    terrain_heightmap_script = PathJoinSubstitution(
+        [FindPackageShare(description_package), "scripts", "terrain_heightmap_publisher.py"]
+    )
+
+    terrain_heightmap_publisher_node = ExecuteProcess(
+        cmd=[
+            "python3",
+            terrain_heightmap_script,
+            "--ros-args",
+            "-r",
+            "__node:=terrain_heightmap_publisher",
+            "-p",
+            ["scene_xml_path:=", mujoco_scene_xml_path],
+        ],
+        output="both",
+        condition=IfCondition(use_heightmap_publisher),
+    )
+
     # -----------------------------------------------------------------------
     # Spawners
     # -----------------------------------------------------------------------
@@ -226,11 +329,45 @@ def generate_launch_description():
             target_action=stand_static_controller_spawner,
             on_exit=[
                 joint_state_broadcaster_spawner,
+            ],
+        )
+    )
+
+    delay_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[
                 imu_state_broadcaster_spawner,
+            ],
+        )
+    )
+
+    delay_after_imu_state_broadcaster_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=imu_state_broadcaster_spawner,
+            on_exit=[
                 rl_controller_spawner,
+            ],
+        )
+    )
+
+    delay_after_rl_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=rl_controller_spawner,
+            on_exit=[
                 sit_static_controller_spawner,
+            ],
+        )
+    )
+
+    delay_after_sit_static_controller_spawner = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=sit_static_controller_spawner,
+            on_exit=[
                 rviz_node,
                 rqt_controller_manager,
+                goal_to_cmd_vel_node,
+                terrain_heightmap_publisher_node,
             ],
         )
     )
@@ -240,6 +377,10 @@ def generate_launch_description():
         robot_state_pub_node,
         stand_static_controller_spawner,
         delay_after_stand_static_controller_spawner,
+        delay_after_joint_state_broadcaster_spawner,
+        delay_after_imu_state_broadcaster_spawner,
+        delay_after_rl_controller_spawner,
+        delay_after_sit_static_controller_spawner,
     ]
 
     return LaunchDescription(declared_arguments + nodes)

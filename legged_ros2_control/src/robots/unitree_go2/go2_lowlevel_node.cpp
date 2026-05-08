@@ -17,17 +17,22 @@ namespace legged
 
 Go2LowLevelNode::Go2LowLevelNode(
     const std::string & node_name,
+    const std::string & lowstate_topic,
+    const std::string & lowcmd_topic,
     const rclcpp::NodeOptions & options) : Node(node_name, options)
 {
     init_lowcmd_();
 
     lowstate_subscriber_ = this->create_subscription<unitree_go::msg::LowState>(
-        "/lowstate", rclcpp::SensorDataQoS(),
+        lowstate_topic, rclcpp::SensorDataQoS(),
         std::bind(&Go2LowLevelNode::lowstate_callback, this, std::placeholders::_1));
 
     lowcmd_publisher_ = this->create_publisher<unitree_go::msg::LowCmd>(
-        "/lowcmd", 10);
+        lowcmd_topic, 10);
 
+    RCLCPP_INFO(
+        this->get_logger(), "Go2 low-level topics: lowstate=%s lowcmd=%s",
+        lowstate_topic.c_str(), lowcmd_topic.c_str());
 }
 
 

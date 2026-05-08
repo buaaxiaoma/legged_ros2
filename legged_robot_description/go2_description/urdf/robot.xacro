@@ -6,6 +6,8 @@
     <xacro:arg name="prefix" default="" />
     <xacro:arg name="enable_sim" default="true" />
     <xacro:arg name="enable_lowlevel_write" default="true" />
+    <xacro:arg name="lowstate_topic" default="/lowstate" />
+    <xacro:arg name="lowcmd_topic" default="/lowcmd" />
 
     <xacro:include filename="$(find go2_description)/urdf/const.xacro"/>
     <xacro:include filename="$(find go2_description)/urdf/materials.xacro"/>
@@ -148,6 +150,8 @@
     <xacro:go2_ros2_control 
         prefix="$(arg prefix)" 
         enable_sim="$(arg enable_sim)" 
-        enable_lowlevel_write="$(arg enable_lowlevel_write)"/>
+        enable_lowlevel_write="$(arg enable_lowlevel_write)"
+        lowstate_topic="$(arg lowstate_topic)"
+        lowcmd_topic="$(arg lowcmd_topic)"/>
         
 </robot>

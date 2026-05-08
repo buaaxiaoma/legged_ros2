@@ -13,6 +13,7 @@
 #pragma once
 
 #include "onnxruntime_cxx_api.h"
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <memory>
@@ -60,6 +61,9 @@ public:
     for (const auto &shape : input_shapes_) {
       size_t size = 1;
       for (const auto &dim : shape) {
+        if (dim <= 0) {
+          throw std::runtime_error("Only static positive ONNX input shapes are supported.");
+        }
         size *= dim;
       }
       input_sizes_.push_back(size);
@@ -71,6 +75,9 @@ public:
     auto output_name = session_->GetOutputNameAllocated(0, allocator_);
     output_names_.push_back(output_name.release());
 
+    if (output_shape_.size() < 2 || output_shape_[1] <= 0) {
+      throw std::runtime_error("Only static 2D ONNX output shapes are supported.");
+    }
     action.resize(output_shape_[1]);
   }
 
@@ -92,6 +99,19 @@ public:
     for (size_t i = 0; i < input_names_.size(); ++i) {
       const std::string name_str(input_names_[i]);
       auto &input_data = obs.at(name_str);
+      if (input_data.size() != input_sizes_[i]) {
+        throw std::runtime_error(
+          "Input '" + name_str + "' size mismatch: got " +
+          std::to_string(input_data.size()) + ", expected " +
+          std::to_string(input_sizes_[i]) + ".");
+      }
+      for (size_t j = 0; j < input_data.size(); ++j) {
+        if (!std::isfinite(input_data[j])) {
+          throw std::runtime_error(
+            "Input '" + name_str + "' contains non-finite value at index " +
+            std::to_string(j) + ".");
+        }
+      }
       auto *input_ptr = const_cast<float *>(input_data.data());
       auto input_tensor = Ort::Value::CreateTensor<float>(
         memory_info, input_ptr, input_sizes_[i], input_shapes_[i].data(),
@@ -108,6 +128,12 @@ public:
     auto floatarr = output_tensor.front().GetTensorMutableData<float>();
     std::lock_guard<std::mutex> lock(act_mtx_);
     std::memcpy(action.data(), floatarr, output_shape_[1] * sizeof(float));
+    for (size_t i = 0; i < action.size(); ++i) {
+      if (!std::isfinite(action[i])) {
+        throw std::runtime_error(
+          "ONNX output contains non-finite action at index " + std::to_string(i) + ".");
+      }
+    }
     return action;
   }
 

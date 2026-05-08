@@ -31,6 +31,8 @@ public:
 
     explicit Go2LowLevelNode(
         const std::string & node_name = "go2_lowlevel_node",
+        const std::string & lowstate_topic = "/lowstate",
+        const std::string & lowcmd_topic = "/lowcmd",
         const rclcpp::NodeOptions & options = rclcpp::NodeOptions()
     );
 

@@ -10,8 +10,15 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 
 install(
-  DIRECTORY config launch meshes urdf mjcf rviz2 dae
+  DIRECTORY config launch meshes urdf mjcf rviz2 dae scripts
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    scripts/generate_go2_terrain_scene.py
+    scripts/terrain_heightmap_publisher.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

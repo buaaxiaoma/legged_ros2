@@ -60,6 +60,9 @@ struct ArticulationData
         } range;
     } velocity_command;
 
+    // Height scan values from the latest heightmap message.
+    std::vector<float> height_scan;
+
 };
 
 class Articulation

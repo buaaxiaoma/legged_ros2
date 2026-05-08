@@ -14,6 +14,10 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(controller_manager REQUIRED)
 find_package(urdf REQUIRED)
 find_package(rosgraph_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(unitree_go REQUIRED)
 
 # ------------------------------------------------------------
 # Legged system interface
@@ -54,6 +58,27 @@ pluginlib_export_plugin_description_file(legged_ros2_control legged_ros2_control
 
 
 # ------------------------------------------------------------
+# Goal-to-velocity command helper
+# ------------------------------------------------------------
+
+add_executable(goal_to_cmd_vel
+  src/goal_to_cmd_vel_node.cpp
+)
+target_compile_features(goal_to_cmd_vel PUBLIC c_std_99 cxx_std_17)
+target_include_directories(goal_to_cmd_vel PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(
+  goal_to_cmd_vel
+  rclcpp
+  geometry_msgs
+  tf2
+  tf2_ros
+  unitree_go
+)
+
+# ------------------------------------------------------------
 # Installation
 # ------------------------------------------------------------
 
@@ -68,6 +93,11 @@ install(
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
+)
+
+install(
+  TARGETS goal_to_cmd_vel
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

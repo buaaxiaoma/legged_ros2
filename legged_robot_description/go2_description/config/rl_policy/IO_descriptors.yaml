@@ -34,7 +34,19 @@ actions:
   - -1.5
   - -1.5
   - -1.5
-  scale: 0.25
+  scale:
+  - 0.125
+  - 0.125
+  - 0.125
+  - 0.125
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
+  - 0.25
   shape:
   - 12
 articulations:
@@ -171,10 +183,15 @@ observations:
     name: base_ang_vel
     observation_type: RootState
     overloads:
-      clip: null
+      clip:
+      - -100.0
+      - 100.0
       flatten_history_dim: true
-      history_length: 5
-      scale: null
+      history_length: 0
+      scale:
+      - 0.2
+      - 0.2
+      - 0.2
     shape:
     - 3
   - dtype: torch.float32
@@ -191,10 +208,15 @@ observations:
     name: projected_gravity
     observation_type: RootState
     overloads:
-      clip: null
+      clip:
+      - -100.0
+      - 100.0
       flatten_history_dim: true
-      history_length: 5
-      scale: null
+      history_length: 0
+      scale:
+      - 1.0
+      - 1.0
+      - 1.0
     shape:
     - 3
   - dtype: torch.float32
@@ -207,10 +229,15 @@ observations:
     name: generated_commands
     observation_type: Command
     overloads:
-      clip: null
+      clip:
+      - -100.0
+      - 100.0
       flatten_history_dim: true
-      history_length: 5
-      scale: null
+      history_length: 0
+      scale:
+      - 1.0
+      - 1.0
+      - 1.0
     shape:
     - 3
   - dtype: torch.float32
@@ -251,10 +278,24 @@ observations:
     name: joint_pos_rel
     observation_type: JointState
     overloads:
-      clip: null
+      clip:
+      - -100.0
+      - 100.0
       flatten_history_dim: true
-      history_length: 5
-      scale: null
+      history_length: 0
+      scale:
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
     shape:
     - 12
   - dtype: torch.float32
@@ -295,10 +336,24 @@ observations:
     name: joint_vel_rel
     observation_type: JointState
     overloads:
-      clip: null
+      clip:
+      - -100.0
+      - 100.0
       flatten_history_dim: true
-      history_length: 5
-      scale: null
+      history_length: 0
+      scale:
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
+      - 0.05
     shape:
     - 12
   - dtype: torch.float32
@@ -312,12 +367,45 @@ observations:
     name: last_action
     observation_type: Action
     overloads:
-      clip: null
+      clip:
+      - -100.0
+      - 100.0
       flatten_history_dim: true
-      history_length: 5
-      scale: null
+      history_length: 0
+      scale:
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
+      - 1.0
     shape:
     - 12
+  - dtype: torch.float32
+    extras:
+      description: Height scan from heightmap around the robot.
+      modifiers: null
+    full_path: isaaclab.envs.mdp.observations.height_scan
+    mdp_type: Observation
+    name: height_scan
+    observation_type: HeightScan
+    overloads:
+      clip:
+      - -1.0
+      - 1.0
+      flatten_history_dim: true
+      history_length: 0
+      scale: null
+    params:
+      expected_dim: 187
+    shape:
+    - 187
 scene:
   decimation: 4
   dt: 0.02

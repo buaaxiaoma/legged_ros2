@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:macro name="go2_ros2_control" params="prefix enable_sim:=false enable_lowlevel_write:=true">
+  <xacro:macro name="go2_ros2_control" params="prefix enable_sim:=false enable_lowlevel_write:=true lowstate_topic:=/lowstate lowcmd_topic:=/lowcmd">
 
     <ros2_control name="go2_ros2_control" type="system">
 
@@ -16,6 +16,8 @@
         <hardware>
           <plugin>legged_ros2_control/Go2SystemInterface</plugin>
           <param name="enable_lowlevel_write">${enable_lowlevel_write}</param>
+          <param name="lowstate_topic">${lowstate_topic}</param>
+          <param name="lowcmd_topic">${lowcmd_topic}</param>
         </hardware>
       </xacro:unless>
 

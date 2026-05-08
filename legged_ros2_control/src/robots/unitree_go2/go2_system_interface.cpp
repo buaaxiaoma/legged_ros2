@@ -27,8 +27,20 @@ CallbackReturn Go2SystemInterface::on_init(const hardware_interface::HardwareInf
     return CallbackReturn::ERROR;
   }
 
+  auto get_topic_parameter = [&info](const std::string & name, const std::string & fallback) {
+    auto it = info.hardware_parameters.find(name);
+    if (it == info.hardware_parameters.end() || it->second.empty()) {
+      return fallback;
+    }
+    return it->second;
+  };
+
+  const auto lowstate_topic = get_topic_parameter("lowstate_topic", "/lowstate");
+  const auto lowcmd_topic = get_topic_parameter("lowcmd_topic", "/lowcmd");
+
   // create lowlevel node for unitree ros2 communication
-  unitree_ros2_node_ = std::make_shared<Go2LowLevelNode>();
+  unitree_ros2_node_ = std::make_shared<Go2LowLevelNode>(
+      "go2_lowlevel_node", lowstate_topic, lowcmd_topic);
 
   logger_ = std::make_shared<rclcpp::Logger>(rclcpp::get_logger("Go2SystemInterface"));
 
@@ -44,6 +56,7 @@ CallbackReturn Go2SystemInterface::on_init(const hardware_interface::HardwareInf
   }
 
   RCLCPP_INFO(*logger_, "Enable_lowlevel_write_: %s", enable_lowlevel_write_ ? "true" : "false");
+  RCLCPP_INFO(*logger_, "Low-level topics: lowstate=%s lowcmd=%s", lowstate_topic.c_str(), lowcmd_topic.c_str());
   RCLCPP_INFO(*logger_, "Go2SystemInterface initialized successfully");
 
 

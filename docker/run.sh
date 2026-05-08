@@ -15,16 +15,41 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
+for artifact_dir in build install log; do
+  if [[ -e "${REPO_ROOT}/${artifact_dir}" ]]; then
+    echo "Found ${REPO_ROOT}/${artifact_dir} inside the mounted source tree." >&2
+    echo "Remove it first; Docker builds should create build/install/log under /root/legged_ws, not under src/legged_ros2." >&2
+    echo "Suggested cleanup on the host: rm -rf ${REPO_ROOT}/build ${REPO_ROOT}/install ${REPO_ROOT}/log" >&2
+    exit 1
+  fi
+done
+
 if docker ps -a --format '{{.Names}}' | grep -Fxq "${CONTAINER_NAME}"; then
   echo "Removing existing container: ${CONTAINER_NAME}"
   docker rm -f "${CONTAINER_NAME}" >/dev/null
 fi
 
+docker_args=(
+  -d
+  --name "${CONTAINER_NAME}"
+  --network host
+  -v "${REPO_ROOT}:/root/legged_ws/src/legged_ros2"
+)
+
+if [[ -n "${DISPLAY:-}" && -d /tmp/.X11-unix ]]; then
+  docker_args+=(
+    -e "DISPLAY=${DISPLAY}"
+    -e "QT_X11_NO_MITSHM=1"
+    -v /tmp/.X11-unix:/tmp/.X11-unix:rw
+  )
+fi
+
+if [[ -d /dev/dri ]]; then
+  docker_args+=(--device /dev/dri)
+fi
+
 echo "Starting container ${CONTAINER_NAME} from image ${IMAGE_NAME}"
-docker run -d \
-  --name "${CONTAINER_NAME}" \
-  --network host \
-  -v "${REPO_ROOT}:/root/legged_ws/src/legged_ros2" \
+docker run "${docker_args[@]}" \
   "${IMAGE_NAME}" \
   -lc "trap : TERM INT; sleep infinity & wait"
 

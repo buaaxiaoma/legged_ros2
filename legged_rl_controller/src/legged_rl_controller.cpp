@@ -11,6 +11,8 @@
 
 #include "legged_rl_controller/legged_rl_controller.hpp"
 
+#include <algorithm>
+#include <cmath>
 #include <limits>
 #include <stdexcept>
 
@@ -103,6 +105,13 @@ controller_interface::CallbackReturn LeggedRLController::on_configure(
       cmd_vel_buffer_->writeFromNonRT(msg);
     });
 
+  heightmap_buffer_ = std::make_shared<HeightMapBuffer>();
+  heightmap_sub_ = get_node()->create_subscription<unitree_go::msg::HeightMap>(
+    "/heightmap", rclcpp::SystemDefaultsQoS(),
+    [this](const unitree_go::msg::HeightMap::SharedPtr msg) {
+      heightmap_buffer_->writeFromNonRT(msg);
+    });
+
   robot_ = std::make_shared<LeggedArticulation>(
     imu_interfaces_[0], joint_interface_, cmd_vel_buffer_); // Use the first IMU interface
 
@@ -148,6 +157,9 @@ controller_interface::CallbackReturn LeggedRLController::on_activate(
   if (cmd_vel_buffer_) {
     cmd_vel_buffer_->reset();
   }
+  if (heightmap_buffer_) {
+    heightmap_buffer_->reset();
+  }
   if (env_) {
     env_->reset();
   }
@@ -184,6 +196,18 @@ controller_interface::return_type LeggedRLController::update(
   }
 
   try {
+    if (heightmap_buffer_) {
+      auto heightmap_msg = *heightmap_buffer_->readFromRT();
+      if (heightmap_msg) {
+        robot_->data.height_scan.assign(
+          heightmap_msg->data.begin(), heightmap_msg->data.end());
+      } else {
+        robot_->data.height_scan.clear();
+      }
+    } else {
+      robot_->data.height_scan.clear();
+    }
+
     env_->step();
     auto action = env_->action_manager->processed_actions();
     if (action.size() != joint_names_.size()) {
@@ -192,6 +216,14 @@ controller_interface::return_type LeggedRLController::update(
         "Action size mismatch: action=%zu, joints=%zu.",
         action.size(), joint_names_.size());
       return controller_interface::return_type::ERROR;
+    }
+    for (size_t i = 0; i < action.size(); ++i) {
+      if (!std::isfinite(action[i])) {
+        RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "Action contains non-finite value at index %zu.", i);
+        return controller_interface::return_type::ERROR;
+      }
     }
 
     joint_interface_->set_joint_command(
