@@ -203,6 +203,7 @@ rl_controller:
     imu_names: # only use one imu for RL observation
       - imu # refer to ros2 control xacro file
     cmd_vel_topic: "rl_cmd_vel"
+    target_pos_topic: "rl_target_pos_b"
     cmd_vel_range_lin_vel_x: [0.0, 2.0]  # m/s
     cmd_vel_range_lin_vel_y: [0.0, 0.0]  # m/s
     cmd_vel_range_ang_vel_z: [-1.5, 1.5]  # rad/s

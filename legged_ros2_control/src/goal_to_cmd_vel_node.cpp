@@ -88,6 +88,7 @@ public:
     goal_pose_topic_ = declare_parameter<std::string>("goal_pose_topic", "/goal_pose");
     clicked_point_topic_ = declare_parameter<std::string>("clicked_point_topic", "/clicked_point");
     cmd_vel_topic_ = declare_parameter<std::string>("cmd_vel_topic", "/cmd_vel");
+    target_pos_topic_ = declare_parameter<std::string>("target_pos_topic", "/rl_target_pos_b");
     sport_mode_state_topic_ =
       declare_parameter<std::string>("sport_mode_state_topic", "/sportmodestate");
 
@@ -126,6 +127,7 @@ public:
       declare_parameter<double>("command_smoothing_factor", 0.1);
 
     cmd_vel_pub_ = create_publisher<geometry_msgs::msg::Twist>(cmd_vel_topic_, 10);
+    target_pos_pub_ = create_publisher<geometry_msgs::msg::PointStamped>(target_pos_topic_, 10);
     local_target_pub_ =
       create_publisher<geometry_msgs::msg::PointStamped>("~/local_target_b", 10);
 
@@ -161,9 +163,9 @@ public:
 
     RCLCPP_INFO(
       get_logger(),
-      "goal_to_cmd_vel ready: goal_pose=%s clicked_point=%s cmd_vel=%s world_frame=%s base_frame=%s",
+      "goal_to_cmd_vel ready: goal_pose=%s clicked_point=%s cmd_vel=%s target_pos=%s world_frame=%s base_frame=%s",
       goal_pose_topic_.c_str(), clicked_point_topic_.c_str(), cmd_vel_topic_.c_str(),
-      world_frame_.c_str(), base_frame_.c_str());
+      target_pos_topic_.c_str(), world_frame_.c_str(), base_frame_.c_str());
   }
 
 private:
@@ -493,10 +495,12 @@ private:
   {
     geometry_msgs::msg::Twist msg;
     cmd_vel_pub_->publish(msg);
+    publish_target_pos(0.0, 0.0);
   }
 
   void publish_local_target(double x_b, double y_b)
   {
+    publish_target_pos(x_b, y_b);
     geometry_msgs::msg::PointStamped msg;
     msg.header.stamp = now();
     msg.header.frame_id = base_frame_;
@@ -506,11 +510,23 @@ private:
     local_target_pub_->publish(msg);
   }
 
+  void publish_target_pos(double x_b, double y_b)
+  {
+    geometry_msgs::msg::PointStamped msg;
+    msg.header.stamp = now();
+    msg.header.frame_id = base_frame_;
+    msg.point.x = x_b;
+    msg.point.y = y_b;
+    msg.point.z = 0.0;
+    target_pos_pub_->publish(msg);
+  }
+
   std::string world_frame_;
   std::string base_frame_;
   std::string goal_pose_topic_;
   std::string clicked_point_topic_;
   std::string cmd_vel_topic_;
+  std::string target_pos_topic_;
   std::string sport_mode_state_topic_;
 
   bool use_tf_pose_ = true;
@@ -539,6 +555,7 @@ private:
   double command_smoothing_factor_ = 0.1;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr target_pos_pub_;
   rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr local_target_pub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr goal_pose_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clicked_point_sub_;

@@ -112,6 +112,13 @@ REGISTER_OBSERVATION(generated_commands)
     return obs;
 }
 
+REGISTER_OBSERVATION(target_pos)
+{
+    (void)params;  // Reserved for per-observation config.
+    auto & data = env->robot->data.target_pos_b;
+    return std::vector<float>(data.data(), data.data() + data.size());
+}
+
 REGISTER_OBSERVATION(height_scan)
 {
     size_t expected_dim = 0;

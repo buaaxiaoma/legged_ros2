@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(hardware_interface REQUIRED)
 find_package(controller_interface REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(legged_ros2_control REQUIRED)
 find_package(realtime_tools REQUIRED)
@@ -51,6 +52,7 @@ ament_target_dependencies(
   pluginlib
   hardware_interface
   controller_interface
+  geometry_msgs
   rclcpp_lifecycle
   legged_ros2_control
   realtime_tools

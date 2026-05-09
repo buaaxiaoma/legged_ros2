@@ -1,7 +1,7 @@
 ## 1. 地形生成
 
 ```bash
-python3 /home/ws/projects/legged_ros2/legged_robot_description/go2_description/scripts/generate_go2_terrain_scene.py \
+python3 legged_robot_description/go2_description/scripts/generate_go2_terrain_scene.py \
   --terrain mixed \ 
   --seed 7  # gap pit flat rough stairs stairs-high mixed
 ```
@@ -74,6 +74,16 @@ ros2 launch go2_description bringup_rl.launch.py \
   use_goal_to_cmd_vel:=true \
   use_heightmap_publisher:=true
 ```
+
+或若想使用观测中带target_pos项的策略的话：
+```bash
+ros2 launch go2_description bringup_rl.launch.py \
+  use_rviz:=true \
+  use_goal_to_cmd_vel:=true \
+  use_heightmap_publisher:=true \
+  onnx_model_path:=/root/legged_ws/install/go2_description/share/go2_description/config/rl_policy_target_pos/policy.onnx \
+  io_descriptors_path:=/root/legged_ws/install/go2_description/share/go2_description/config/rl_policy_target_pos/IO_descriptors.yaml
+  ```
 
 ## 5. 切换控制状态
 ```bash

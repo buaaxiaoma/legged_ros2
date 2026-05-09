@@ -12,6 +12,10 @@
 
 #pragma once
 
+#include <array>
+#include <string>
+#include <vector>
+
 #include <eigen3/Eigen/Dense>
 
 namespace isaaclab
@@ -62,6 +66,9 @@ struct ArticulationData
 
     // Height scan values from the latest heightmap message.
     std::vector<float> height_scan;
+
+    // Target position relative to the robot base/yaw frame: [x_b, y_b].
+    Eigen::Vector2f target_pos_b = Eigen::Vector2f::Zero();
 
 };
 

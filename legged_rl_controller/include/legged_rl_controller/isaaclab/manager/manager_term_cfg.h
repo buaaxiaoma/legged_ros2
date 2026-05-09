@@ -59,7 +59,7 @@ struct ObservationTermCfg {
       // Apply scaling and clipping based on the configuration.
       if (scale_first) {
         if (!scale.empty()) {
-          obs[j] *= scale[j];
+          obs[j] *= scale.size() == 1U ? scale[0] : scale[j];
         }
         if (!clip.empty()) {
           obs[j] = std::clamp(obs[j], clip[0], clip[1]);
@@ -69,7 +69,7 @@ struct ObservationTermCfg {
           obs[j] = std::clamp(obs[j], clip[0], clip[1]);
         }
         if (!scale.empty()) {
-          obs[j] *= scale[j];
+          obs[j] *= scale.size() == 1U ? scale[0] : scale[j];
         }
       }
     }

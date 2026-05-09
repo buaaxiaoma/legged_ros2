@@ -42,6 +42,7 @@ controller_interface::CallbackReturn LeggedRLController::on_init()
   auto_declare<std::vector<double>>("cmd_vel_range_lin_vel_x", std::vector<double>());
   auto_declare<std::vector<double>>("cmd_vel_range_lin_vel_y", std::vector<double>());
   auto_declare<std::vector<double>>("cmd_vel_range_ang_vel_z", std::vector<double>());
+  auto_declare<std::string>("target_pos_topic", "rl_target_pos_b");
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -52,6 +53,7 @@ controller_interface::CallbackReturn LeggedRLController::on_configure(
   onnx_model_path_ = get_node()->get_parameter("onnx_model_path").as_string();
   io_descriptors_path_ = get_node()->get_parameter("io_descriptors_path").as_string();
   auto cmd_vel_topic = get_node()->get_parameter("cmd_vel_topic").as_string();
+  auto target_pos_topic = get_node()->get_parameter("target_pos_topic").as_string();
 
   if (onnx_model_path_.empty()) {
     RCLCPP_ERROR(get_node()->get_logger(), "Parameter 'onnx_model_path' is empty.");
@@ -112,6 +114,13 @@ controller_interface::CallbackReturn LeggedRLController::on_configure(
       heightmap_buffer_->writeFromNonRT(msg);
     });
 
+  target_pos_buffer_ = std::make_shared<TargetPosBuffer>();
+  target_pos_sub_ = get_node()->create_subscription<geometry_msgs::msg::PointStamped>(
+    target_pos_topic, rclcpp::SystemDefaultsQoS(),
+    [this](const geometry_msgs::msg::PointStamped::SharedPtr msg) {
+      target_pos_buffer_->writeFromNonRT(msg);
+    });
+
   robot_ = std::make_shared<LeggedArticulation>(
     imu_interfaces_[0], joint_interface_, cmd_vel_buffer_); // Use the first IMU interface
 
@@ -160,6 +169,12 @@ controller_interface::CallbackReturn LeggedRLController::on_activate(
   if (heightmap_buffer_) {
     heightmap_buffer_->reset();
   }
+  if (target_pos_buffer_) {
+    target_pos_buffer_->reset();
+  }
+  if (robot_) {
+    robot_->data.target_pos_b.setZero();
+  }
   if (env_) {
     env_->reset();
   }
@@ -206,6 +221,23 @@ controller_interface::return_type LeggedRLController::update(
       }
     } else {
       robot_->data.height_scan.clear();
+    }
+
+    if (target_pos_buffer_) {
+      auto target_pos_msg = *target_pos_buffer_->readFromRT();
+      if (target_pos_msg) {
+        const auto x_b = static_cast<float>(target_pos_msg->point.x);
+        const auto y_b = static_cast<float>(target_pos_msg->point.y);
+        if (std::isfinite(x_b) && std::isfinite(y_b)) {
+          robot_->data.target_pos_b = Eigen::Vector2f(x_b, y_b);
+        } else {
+          robot_->data.target_pos_b.setZero();
+        }
+      } else {
+        robot_->data.target_pos_b.setZero();
+      }
+    } else {
+      robot_->data.target_pos_b.setZero();
     }
 
     env_->step();

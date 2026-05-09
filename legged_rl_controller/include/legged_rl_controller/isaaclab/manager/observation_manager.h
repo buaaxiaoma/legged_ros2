@@ -141,7 +141,11 @@ protected:
     }
     term_cfg.history_length = history_length;
     if (!overloads["scale"].IsNull()) {
-      term_cfg.scale = overloads["scale"].as<std::vector<float>>();
+      if (overloads["scale"].IsSequence()) {
+        term_cfg.scale = overloads["scale"].as<std::vector<float>>();
+      } else {
+        term_cfg.scale = {overloads["scale"].as<float>()};
+      }
     }
     if (!overloads["clip"].IsNull()) {
       term_cfg.clip = overloads["clip"].as<std::vector<float>>();

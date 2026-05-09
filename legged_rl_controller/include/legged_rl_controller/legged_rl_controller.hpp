@@ -16,6 +16,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "realtime_tools/realtime_buffer.hpp"
+#include "geometry_msgs/msg/point_stamped.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "unitree_go/msg/height_map.hpp"
 
@@ -58,6 +59,11 @@ protected:
   using HeightMapMsgSharedPtr = std::shared_ptr<unitree_go::msg::HeightMap>;
   using HeightMapBuffer = realtime_tools::RealtimeBuffer<HeightMapMsgSharedPtr>;
   std::shared_ptr<HeightMapBuffer> heightmap_buffer_;
+
+  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr target_pos_sub_;
+  using TargetPosMsgSharedPtr = std::shared_ptr<geometry_msgs::msg::PointStamped>;
+  using TargetPosBuffer = realtime_tools::RealtimeBuffer<TargetPosMsgSharedPtr>;
+  std::shared_ptr<TargetPosBuffer> target_pos_buffer_;
 
   std::unique_ptr<isaaclab::ManagerBasedRLEnv> env_;
   std::shared_ptr<isaaclab::Articulation> robot_;
