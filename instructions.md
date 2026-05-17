@@ -84,6 +84,16 @@ ros2 launch go2_description bringup_rl.launch.py \
   onnx_model_path:=/root/legged_ws/install/go2_description/share/go2_description/config/rl_policy_target_pos/policy.onnx \
   io_descriptors_path:=/root/legged_ws/install/go2_description/share/go2_description/config/rl_policy_target_pos/IO_descriptors.yaml
   ```
+或：
+```bash
+ros2 launch go2_description bringup_rl.launch.py \
+  use_rviz:=true \
+  use_goal_to_cmd_vel:=true \
+  use_heightmap_publisher:=true \
+  onnx_model_path:=/root/legged_ws/install/go2_description/share/go2_description/config/rl_policy_reward_adjust/policy.onnx \
+  io_descriptors_path:=/root/legged_ws/install/go2_description/share/go2_description/config/rl_policy_reward_adjust/IO_descriptors.yaml
+  ```
+
 
 ## 5. 切换控制状态
 ```bash
